@@ -1,0 +1,18 @@
+package edu.ecom.authn.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+public class LoginRequest {
+
+  // Getters and Setters
+  @NotBlank(message = "Username cannot be blank")
+  private String username;
+
+  @NotBlank(message = "Password cannot be blank")
+  private String password;
+
+}

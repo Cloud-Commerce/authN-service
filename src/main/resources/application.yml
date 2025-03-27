@@ -1,6 +1,6 @@
 spring:
   application:
-    name: authn-server
+    name: authn-service
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:auth_service}
     username: ${DB_USER:auth_user}

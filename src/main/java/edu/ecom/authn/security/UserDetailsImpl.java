@@ -1,6 +1,7 @@
 package edu.ecom.authn.security;
 
 import edu.ecom.authn.entity.User;
+import edu.ecom.authn.entity.UserRole;
 import edu.ecom.authn.model.Role;
 import java.util.Collection;
 import java.util.Set;
@@ -19,7 +20,9 @@ public class UserDetailsImpl implements UserDetails {
   Collection<? extends GrantedAuthority> authorities;
 
   public static UserDetails build(User user) {
-    Set<SimpleGrantedAuthority> authorities = user.getRoles().stream().map(Role::name)
+    Set<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+        .map(UserRole::getRole)
+        .map(Role::name)
         .map(SimpleGrantedAuthority::new)
         .collect(Collectors.toSet());
 

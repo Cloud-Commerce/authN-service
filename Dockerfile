@@ -17,7 +17,6 @@ RUN apt-get update && \
 # 3. Copy remaining application files
 COPY pom.xml .
 COPY src src
-COPY db db
 
 # Install dependencies and build
 RUN ./mvnw package -DskipTests
@@ -25,6 +24,7 @@ RUN ./mvnw package -DskipTests
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+COPY db db
 COPY --from=builder /app/target/authN-service-*.jar ./authN-service.jar
 
 EXPOSE 8501

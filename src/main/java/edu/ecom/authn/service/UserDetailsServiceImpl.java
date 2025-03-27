@@ -2,6 +2,10 @@ package edu.ecom.authn.service;
 
 import edu.ecom.authn.entity.User;
 import edu.ecom.authn.repository.UserRepository;
+import edu.ecom.authn.security.UserDetailsImpl;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,14 +13,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class UserService {
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements UserDetailsService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
-  public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-    this.userRepository = userRepository;
-    this.passwordEncoder = passwordEncoder;
+  @Override
+  public UserDetails loadUserByUsername(String username) {
+    return userRepository.findByUsername(username).map(UserDetailsImpl::build)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
   }
 
   public void registerUser(String username, String password) {
@@ -26,11 +32,6 @@ public class UserService {
 
     User user = User.builder().username(username).password(passwordEncoder.encode(password)).build();
     userRepository.save(user);
-  }
-
-  public User findByUsername(String username) {
-    return userRepository.findByUsername(username)
-        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
   }
 
   public Boolean existsByUsername(String username) {

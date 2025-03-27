@@ -1,6 +1,5 @@
 package edu.ecom.authn.util;
 
-import edu.ecom.authn.security.UserDetailsImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -8,9 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -18,16 +15,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class JWTUtils {
+public class JwtUtils {
 
   private final SecretKey jwtSecretKey;
   private final long jwtExpirationMs;
 
-  public JWTUtils(
+  public JwtUtils(
       @Value("${app.jwt.secret}") String jwtSecret,
       @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
     // Convert the plain text secret to a secure key
@@ -36,7 +34,7 @@ public class JWTUtils {
   }
 
   public String generateToken(Authentication authentication) {
-    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
 //    Map<String, Object> claims = new HashMap<>();
 //    claims.put("roles", userDetails.getAuthorities().stream()
@@ -47,17 +45,17 @@ public class JWTUtils {
         .subject(userDetails.getUsername())
         .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-        .claim("id", userDetails.getId())
+        .claim("username", userDetails.getUsername())
         .claim("authorities", userDetails.getAuthorities())
         .signWith(jwtSecretKey, Jwts.SIG.HS512) // New signature method
         .compact();
   }
 
-  public String getUserNameFromJwtToken(String token) {
+  public String getUsernameFromToken(String token) {
     return extractAllClaims(token).getSubject();
   }
 
-  public boolean validateJwtToken(String authToken) {
+  public boolean validateToken(String authToken) {
     try {
       Jwts.parser()
           .verifyWith(jwtSecretKey)

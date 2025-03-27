@@ -1,7 +1,7 @@
 package edu.ecom.authn.filter;
 
 import edu.ecom.authn.security.UserDetailsImpl;
-import edu.ecom.authn.util.JWTUtils;
+import edu.ecom.authn.util.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,23 +15,22 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-public class JWTAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   @Autowired
-  JWTUtils jwtUtils;
+  private JwtUtils jwtUtils;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request,
       HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
     try {
-      String jwt = parseJwt(request);
-      if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-        String username = jwtUtils.getUserNameFromJwtToken(jwt);
-        Claims claims = jwtUtils.extractAllClaims(jwt);
+      String token = extractToken(request);
+      if (token != null && jwtUtils.validateToken(token)) {
+        String username = jwtUtils.getUsernameFromToken(token);
+        Claims claims = jwtUtils.extractAllClaims(token);
         Collection<? extends GrantedAuthority> authorities = jwtUtils.extractAuthorities(claims);
 
         UserDetails userDetails = new UserDetailsImpl(claims.get("id", Long.class),
@@ -41,22 +40,23 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         );
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-            userDetails,null, userDetails.getAuthorities());
+            userDetails, null, userDetails.getAuthorities());
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
       }
-    } catch (Exception e) {
-      logger.error("Cannot set user authentication: {}", e);
+    } catch (Exception ex) {
+      // Log the exception
+      logger.error("Could not set user authentication in security context: {}", ex);
     }
 
     filterChain.doFilter(request, response);
   }
 
-  private String parseJwt(HttpServletRequest request) {
-    String headerAuth = request.getHeader("Authorization");
-    if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-      return headerAuth.substring(7);
+  private String extractToken(HttpServletRequest request) {
+    String bearerToken = request.getHeader("Authorization");
+    if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+      return bearerToken.split(" ")[1];
     }
     return null;
   }

@@ -3,7 +3,6 @@ package edu.ecom.authn.service;
 import edu.ecom.authn.entity.User;
 import edu.ecom.authn.model.Role;
 import edu.ecom.authn.repository.UserRepository;
-import edu.ecom.authn.repository.UserRoleRepository;
 import edu.ecom.authn.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
   private final UserRepository userRepository;
-  private final UserRoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
 
   @Override
@@ -33,9 +31,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
       throw new IllegalArgumentException("Username already exists");
     }
 
-    User user = User.builder().username(username).password(passwordEncoder.encode(password)).build();
+    User user = new User(username, passwordEncoder.encode(password));
+    user.addRole(Role.ROLE_CUSTOMER);
     userRepository.save(user);
-    roleRepository.insertUserRole(Role.ROLE_CUSTOMER.name(), user.getId());
   }
 
   public Boolean existsByUsername(String username) {

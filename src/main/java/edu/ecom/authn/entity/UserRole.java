@@ -11,38 +11,33 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.util.Objects;
+import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "user_roles")
 @IdClass(UserRoleId.class) // For composite key
-@Value
-@NoArgsConstructor(force = true)
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // Required by JPA
 @AllArgsConstructor
 public class UserRole {
 
   @Id
   @ManyToOne
-  @JoinColumn(name = "user_id", nullable = false)
+  @NotNull
+  @JoinColumn(name = "user_id", nullable = false, updatable = false)
   User user;
 
   @Id
+  @NotNull
   @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   @Column(columnDefinition = "role_enum", nullable = false)
   Role role;
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(role); // Only hash role, not user
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof UserRole userRole)) return false;
-    return role == userRole.role; // Only compare role, not user
-  }
 }

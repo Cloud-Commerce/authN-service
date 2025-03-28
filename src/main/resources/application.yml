@@ -34,4 +34,4 @@ eureka:
 app:
   jwt:
     secret: TwIlWN/981FuI7Y2x+JSGDm15Hj54+U2DDtlr3Ij2Ycke4qpiwI/pQMSGoRlw8Vl8+EiZPw4/aC3HqBhUDWdog==
-    expiration-ms: 86400000 # 24 hours
+    expiration-ms: 1800000  # 30 minutes in milliseconds

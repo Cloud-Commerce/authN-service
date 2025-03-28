@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,17 +16,30 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+  private final JwtUtils jwtUtils;
+  private final String[] publicEndpoints;
+
   @Autowired
-  private JwtUtils jwtUtils;
+  public JwtAuthenticationFilter(JwtUtils jwtUtils, String[] publicEndpoints) {
+    this.jwtUtils = jwtUtils;
+    this.publicEndpoints = publicEndpoints;
+  }
 
   @Override
   protected void doFilterInternal(HttpServletRequest request,
       HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
+    if (!requiresAuthentication(request)) {
+      filterChain.doFilter(request, response);
+      return;
+    }
     try {
       String token = extractToken(request);
       if (token != null && jwtUtils.validateToken(token)) {
@@ -51,6 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private boolean requiresAuthentication(HttpServletRequest request) {
+    return Arrays.stream(publicEndpoints).map(AntPathRequestMatcher::new)
+        .noneMatch(requestMatcher -> requestMatcher.matches(request));
   }
 
   private String extractToken(HttpServletRequest request) {

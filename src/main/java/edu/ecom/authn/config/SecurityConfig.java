@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,39 +22,19 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
+@EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter) throws Exception {
     http
         // Disable CSRF for stateless JWT-based authentication
         .csrf(AbstractHttpConfigurer::disable)
         // Authorization rules
-        .authorizeHttpRequests(authorize -> authorize
-            // Public endpoints
-            .requestMatchers("/api/public/**", "/api/auth/**").permitAll()
-
-            // Actuator endpoints
-            .requestMatchers("/actuator/**").permitAll()
-
-            // Swagger and API docs
-            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
-
-            // Admin endpoints
-            .requestMatchers("/api/admin/**").hasAuthority(Role.ROLE_ADMIN.getAuthority())
-            .requestMatchers("/api/inventory/**").hasAnyAuthority(
-                Role.ROLE_INVENTORY_MANAGER.getAuthority(),
-                Role.ROLE_ADMIN.getAuthority())
-
-            // Authenticated access for other endpoints
-            .anyRequest().authenticated()
-        )
+        .authorizeHttpRequests(this::getRequestMatcherRegistry)
 
         // Configure session management to be stateless
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
         // Exception handling
         .exceptionHandling(exception -> exception
@@ -69,15 +50,31 @@ public class SecurityConfig {
         )
 
         // Add JWT filter
-        .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
 
-  // Custom JWT Authentication Filter
-  @Bean
-  public JwtAuthenticationFilter jwtAuthenticationFilter() {
-    return new JwtAuthenticationFilter();
+  protected void getRequestMatcherRegistry(
+      AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    authorize
+        // Public endpoints
+        .requestMatchers(getPublicEndpoints()).permitAll()
+
+        // Admin endpoints
+        .requestMatchers("/api/admin/**").hasAuthority(Role.ROLE_ADMIN.getAuthority())
+        .requestMatchers("/api/inventory/**").hasAnyAuthority(
+            Role.ROLE_INVENTORY_MANAGER.getAuthority(),
+            Role.ROLE_ADMIN.getAuthority())
+
+        // Authenticated access for other endpoints
+        .anyRequest().authenticated();
+  }
+
+  @Bean("publicEndpoints")
+  protected String[] getPublicEndpoints() {
+   return new String[]{"/api/public/**", "/api/auth/**", "/actuator/**",
+       "/v3/api-docs/**", "/swagger-ui/**"};
   }
 
   @Bean

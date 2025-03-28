@@ -33,5 +33,6 @@ eureka:
     lease-renewal-interval-in-seconds: 5 # Heartbeat interval - DO NOT DO THIS IN PRODUCTION
 app:
   jwt:
+    # Generate a 512-bit (64-byte) random key by command: openssl rand -base64 64
     secret: TwIlWN/981FuI7Y2x+JSGDm15Hj54+U2DDtlr3Ij2Ycke4qpiwI/pQMSGoRlw8Vl8+EiZPw4/aC3HqBhUDWdog==
     expiration-ms: 1800000  # 30 minutes in milliseconds

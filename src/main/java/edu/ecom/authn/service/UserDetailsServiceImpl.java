@@ -2,9 +2,11 @@ package edu.ecom.authn.service;
 
 import edu.ecom.authn.entity.User;
 import edu.ecom.authn.model.Role;
+import edu.ecom.authn.model.UserDetailsImpl;
 import edu.ecom.authn.repository.UserRepository;
-import edu.ecom.authn.security.UserDetailsImpl;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,7 +24,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String username) {
-    return userRepository.findByUsername(username).map(UserDetailsImpl::build)
+    return loadUserByUsername(username, UserDetailsImpl::build);
+  }
+
+  public UserDetails loadUserByUsername(String username, Function<User, UserDetails> mapper) {
+    return userRepository.findByUsername(username).map(mapper)
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
   }
 
@@ -38,5 +44,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
   public Boolean existsByUsername(String username) {
     return userRepository.existsByUsername(username);
+  }
+
+  public void changePassword(String username, String oldPassword, String newPassword) {
+    User user = (User) loadUserByUsername(username, u -> u);
+    if (!passwordEncoder.matches(user.getPassword(), oldPassword)) {
+      throw new BadCredentialsException("Current password is invalid");
+    }
+
+    user.setPassword(passwordEncoder.encode(newPassword));
+    userRepository.save(user);
   }
 }

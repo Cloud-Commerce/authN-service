@@ -1,4 +1,4 @@
-package edu.ecom.authn.config;
+package edu.ecom.authn.security.config;
 
 import edu.ecom.authn.filter.JwtAuthenticationFilter;
 import edu.ecom.authn.handler.CustomAccessDeniedHandler;

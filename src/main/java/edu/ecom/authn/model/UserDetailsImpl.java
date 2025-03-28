@@ -1,8 +1,7 @@
-package edu.ecom.authn.security;
+package edu.ecom.authn.model;
 
 import edu.ecom.authn.entity.User;
 import edu.ecom.authn.entity.UserRole;
-import edu.ecom.authn.model.Role;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;

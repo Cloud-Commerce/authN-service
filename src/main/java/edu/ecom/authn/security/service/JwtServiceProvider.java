@@ -1,13 +1,16 @@
-package edu.ecom.authn.util;
+package edu.ecom.authn.security.service;
 
+import edu.ecom.authn.dto.TokenDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Jwts.SIG;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -20,20 +23,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class JwtUtils {
+public class JwtServiceProvider {
 
   private final SecretKey jwtSecretKey;
   private final long jwtExpirationMs;
 
-  public JwtUtils(
+  public JwtServiceProvider(
       @Value("${app.jwt.secret}") String jwtSecret,
       @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
-    // Convert the plain text secret to a secure key
     this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     this.jwtExpirationMs = jwtExpirationMs;
   }
 
-  public String generateToken(Authentication authentication) {
+  public TokenDetails generateToken(Authentication authentication) {
     UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
 //    Map<String, Object> claims = new HashMap<>();
@@ -41,17 +43,24 @@ public class JwtUtils {
 //        .map(GrantedAuthority::getAuthority)
 //        .collect(Collectors.toList()));
 
-    return Jwts.builder()
-        .subject(userDetails.getUsername())
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-        .claim("username", userDetails.getUsername())
+    TokenDetails tokenDetails = TokenDetails.builder().username(userDetails.getUsername())
+        .id(UUID.randomUUID().toString()).issuedAt(new Date()).state("Active")
+        .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs)).build();
+
+    tokenDetails.setToken(Jwts.builder()
+        .id(tokenDetails.getId())  // Include jti in the JWT
+        .subject(tokenDetails.getUsername())
+        .issuer("edu.ecom.authn")
+        .issuedAt(tokenDetails.getIssuedAt())
+        .expiration(tokenDetails.getExpiration())
         .claim("authorities", userDetails.getAuthorities())
-        .signWith(jwtSecretKey, Jwts.SIG.HS512) // New signature method
-        .compact();
+        .signWith(jwtSecretKey, SIG.HS512) // New signature method
+        .compact());
+
+    return tokenDetails;
   }
 
-  public String getUsernameFromToken(String token) {
+  public String extractUsername(String token) {
     return extractAllClaims(token).getSubject();
   }
 

@@ -8,7 +8,6 @@ import lombok.Setter;
 @Getter
 public class LoginRequest {
 
-  // Getters and Setters
   @NotBlank(message = "Username cannot be blank")
   private String username;
 

@@ -70,13 +70,10 @@ public class AuthController {
   }
 
   @PostMapping("/change-password")
-  public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request,
-      @RequestHeader("Authorization") String token) {
-
-    String username = jwtServiceProvider.extractUsername(token);
-
-    userDetailsService.changePassword(username, request.getOldPassword(), request.getNewPassword());
-    tokenManagementService.invalidateAllTokensForUser(username);
+  public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+    Claims claims = ((AuthDetails) SecurityContextHolder.getContext().getAuthentication().getDetails()).getClaims();
+    userDetailsService.changePassword(claims.getSubject(), request.getOldPassword(), request.getNewPassword());
+    tokenManagementService.invalidateAllTokensForUser(claims.getSubject());
 
     return ResponseEntity.ok("Password updated successfully");
   }
@@ -84,7 +81,7 @@ public class AuthController {
   @PostMapping("/logout")
   public ResponseEntity<?> logout() {
     Claims claims = ((AuthDetails) SecurityContextHolder.getContext().getAuthentication().getDetails()).getClaims();
-    tokenManagementService.markAsBlacklisted(claims.getId(), claims.getExpiration()); // Store in Redis/DB
+    tokenManagementService.markAsBlacklisted(claims.getSubject(), claims.getId(), claims.getExpiration()); // Store in Redis/DB
     return ResponseEntity.ok("Logged out successfully");
   }
 }

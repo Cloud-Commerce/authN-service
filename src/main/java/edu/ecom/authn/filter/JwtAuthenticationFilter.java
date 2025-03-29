@@ -3,6 +3,7 @@ package edu.ecom.authn.filter;
 import edu.ecom.authn.dto.AuthDetails;
 import edu.ecom.authn.model.UserDetailsImpl;
 import edu.ecom.authn.security.service.JwtServiceProvider;
+import edu.ecom.authn.security.service.TokenManagementService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -26,11 +27,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtServiceProvider jwtServiceProvider;
+  private final TokenManagementService tokenManagementService;
   private final String[] publicEndpoints;
 
   @Autowired
-  public JwtAuthenticationFilter(JwtServiceProvider jwtServiceProvider, String[] publicEndpoints) {
+  public JwtAuthenticationFilter(JwtServiceProvider jwtServiceProvider,
+      TokenManagementService tokenManagementService, String[] publicEndpoints) {
     this.jwtServiceProvider = jwtServiceProvider;
+    this.tokenManagementService = tokenManagementService;
     this.publicEndpoints = publicEndpoints;
   }
 
@@ -46,6 +50,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String token = extractToken(request);
       if (token != null && jwtServiceProvider.validateToken(token)) {
         Claims claims = jwtServiceProvider.extractAllClaims(token);
+
+        if(tokenManagementService.isTokenBlacklisted(claims.getId()))
+          throw new ServletException("Expired Session : User Logged out!");
+
         String username = claims.getSubject();
         Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(claims);
 

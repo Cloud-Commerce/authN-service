@@ -6,10 +6,14 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Jwts.SIG;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.ServletException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
@@ -73,15 +77,15 @@ public class JwtServiceProvider {
       return true;
     } catch (SecurityException | JwtException | IllegalArgumentException e) {
       log.error("Invalid JWT token: {}", e.getMessage());
-      return false;
+      throw new RuntimeException("Invalid JWT token: " + e.getMessage());
     }
   }
 
   public Collection<? extends GrantedAuthority> extractAuthorities(Claims claims) {
-    List<String> authorities = claims.get("authorities", List.class);
-    return authorities.stream()
+    List<LinkedHashMap<String, String>> mapList = claims.get("authorities", List.class);
+    return mapList.stream().map(m -> m.get("authority"))
         .map(SimpleGrantedAuthority::new)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public Claims extractAllClaims(String token) {

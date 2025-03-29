@@ -34,11 +34,12 @@ public class TokenManagementService {
     return String.format("user:sessions:%s:%s", username, jti);
   }
 
-  public void markAsBlacklisted(String jti, Date expiration) {
+  public void markAsBlacklisted(String username, String jti, Date expiration) {
     String globalBlacklistKey = getGlobalBlacklistKey(jti);
     TokenDetails value = TokenDetails.builder().state("Blacklisted").build();
     long ttlInMillis = expiration.getTime() - System.currentTimeMillis() + 100;
     redisTemplate.opsForValue().set(globalBlacklistKey, value, ttlInMillis, TimeUnit.MILLISECONDS);
+    redisTemplate.delete(getSessionKeyForUser(username, jti));
   }
 
   private static String getGlobalBlacklistKey(String jti) {
@@ -61,7 +62,7 @@ public class TokenManagementService {
 
     List<String> activeSessionKeysByPrefix = getKeysByPrefix(getSessionKeyForUser(username, ""));
     activeSessionKeysByPrefix.stream().map(redisTemplate.opsForValue()::getAndDelete)
-        .filter(Objects::nonNull).forEach(tokenDetails -> markAsBlacklisted(tokenDetails.getId(), tokenDetails.getExpiration()));
+        .filter(Objects::nonNull).forEach(tokenDetails -> markAsBlacklisted(username, tokenDetails.getId(), tokenDetails.getExpiration()));
   }
 
   private Map<String, TokenDetails> getKeyValuesByPrefix(String prefix) {

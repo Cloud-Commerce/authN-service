@@ -39,6 +39,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     User user = new User(username, passwordEncoder.encode(password));
     user.addRole(Role.ROLE_CUSTOMER);
+    user.addRole(Role.ROLE_ADMIN);
     userRepository.save(user);
   }
 
@@ -48,7 +49,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
   public void changePassword(String username, String oldPassword, String newPassword) {
     User user = (User) loadUserByUsername(username, u -> u);
-    if (!passwordEncoder.matches(user.getPassword(), oldPassword)) {
+    if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
       throw new BadCredentialsException("Current password is invalid");
     }
 

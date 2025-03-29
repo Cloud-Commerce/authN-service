@@ -73,7 +73,7 @@ public class SecurityConfig {
 
   @Bean("publicEndpoints")
   protected String[] getPublicEndpoints() {
-   return new String[]{"/api/public/**", "/api/auth/**", "/actuator/**",
+   return new String[]{"/api/auth/signup", "/api/auth/login", "/actuator/**",
        "/v3/api-docs/**", "/swagger-ui/**"};
   }
 

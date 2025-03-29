@@ -12,16 +12,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TokenManagementService {
 
   private final RedisTemplate<String, TokenDetails> redisTemplate;
+  private final JwtServiceProvider jwtServiceProvider;
 
   @Autowired
-  public TokenManagementService(RedisTemplate<String, TokenDetails> redisTemplate) {
+  public TokenManagementService(RedisTemplate<String, TokenDetails> redisTemplate,
+      JwtServiceProvider jwtServiceProvider) {
     this.redisTemplate = redisTemplate;
+    this.jwtServiceProvider = jwtServiceProvider;
   }
 
   public void addActiveSession(TokenDetails tokenDetails) {
@@ -89,4 +93,9 @@ public class TokenManagementService {
     return keys;
   }
 
+  public TokenDetails createNewStatelessSession(Authentication authentication) {
+    TokenDetails tokenDetails = jwtServiceProvider.generateToken(authentication);
+    addActiveSession(tokenDetails);
+    return tokenDetails;
+  }
 }

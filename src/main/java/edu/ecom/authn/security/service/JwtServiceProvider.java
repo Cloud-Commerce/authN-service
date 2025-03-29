@@ -6,16 +6,12 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Jwts.SIG;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.ServletException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,7 +73,7 @@ public class JwtServiceProvider {
       return true;
     } catch (SecurityException | JwtException | IllegalArgumentException e) {
       log.error("Invalid JWT token: {}", e.getMessage());
-      throw new RuntimeException("Invalid JWT token: " + e.getMessage());
+      return false;
     }
   }
 

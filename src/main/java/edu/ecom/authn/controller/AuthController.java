@@ -7,7 +7,6 @@ import edu.ecom.authn.dto.LoginRequest;
 import edu.ecom.authn.dto.MessageResponse;
 import edu.ecom.authn.dto.SignupRequest;
 import edu.ecom.authn.dto.TokenDetails;
-import edu.ecom.authn.security.service.JwtServiceProvider;
 import edu.ecom.authn.security.service.TokenManagementService;
 import edu.ecom.authn.service.UserDetailsServiceImpl;
 import io.jsonwebtoken.Claims;
@@ -20,7 +19,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,15 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthenticationManager authenticationManager;
-  private final JwtServiceProvider jwtServiceProvider;
   private final UserDetailsServiceImpl userDetailsService;
   private final TokenManagementService tokenManagementService;
 
   @Autowired
-  public AuthController(AuthenticationManager authenticationManager, JwtServiceProvider jwtServiceProvider,
+  public AuthController(AuthenticationManager authenticationManager,
       UserDetailsServiceImpl userDetailsService, TokenManagementService tokenManagementService) {
     this.authenticationManager = authenticationManager;
-    this.jwtServiceProvider = jwtServiceProvider;
     this.userDetailsService = userDetailsService;
     this.tokenManagementService = tokenManagementService;
   }
@@ -51,9 +47,7 @@ public class AuthController {
       return ResponseEntity.badRequest().body(new MessageResponse("Error: Maximum active sessions reached!"));
     }
 
-    TokenDetails tokenDetails = jwtServiceProvider.generateToken(authentication);
-
-    tokenManagementService.addActiveSession(tokenDetails);
+    TokenDetails tokenDetails = tokenManagementService.createNewStatelessSession(authentication);
 
     return ResponseEntity.ok(new JwtResponse(tokenDetails.getToken()));
   }

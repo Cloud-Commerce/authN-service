@@ -57,14 +57,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username = claims.getSubject();
         Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(claims);
 
-        UserDetails userDetails = new UserDetailsImpl(claims.get("id", Long.class),
-            username,
-            null, // password not needed here
-            null
-        );
+        UserDetails userDetails = new UserDetailsImpl(null, username, token, authorities); // user password not needed here
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-            userDetails, token, userDetails.getAuthorities());
+            userDetails, null, userDetails.getAuthorities()); // synced with UsernamePasswordAuthenticationFilter strategy
         WebAuthenticationDetails webAuthenticationDetails = new WebAuthenticationDetailsSource().buildDetails(request);
 
         authentication.setDetails(AuthDetails.builder().webAuthenticationDetails(

@@ -1,6 +1,7 @@
 package edu.ecom.authn.security.service;
 
 import edu.ecom.authn.dto.TokenDetails;
+import edu.ecom.authn.security.RequestMetadata;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -25,12 +26,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class JwtServiceProvider {
 
+  private final RequestMetadata requestMetadata;
   private final SecretKey jwtSecretKey;
   private final long jwtExpirationMs;
 
   public JwtServiceProvider(
-      @Value("${app.jwt.secret}") String jwtSecret,
+      RequestMetadata requestMetadata, @Value("${app.jwt.secret}") String jwtSecret,
       @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
+    this.requestMetadata = requestMetadata;
     this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     this.jwtExpirationMs = jwtExpirationMs;
   }
@@ -54,6 +57,7 @@ public class JwtServiceProvider {
         .issuedAt(tokenDetails.getIssuedAt())
         .expiration(tokenDetails.getExpiration())
         .claim("authorities", userDetails.getAuthorities())
+        .claims(requestMetadata.getClientInfo())
         .signWith(jwtSecretKey, SIG.HS512) // New signature method
         .compact());
 

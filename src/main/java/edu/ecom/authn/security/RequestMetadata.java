@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import eu.bitwalker.useragentutils.*;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
@@ -11,14 +13,16 @@ import org.springframework.web.context.annotation.RequestScope;
 @RequestScope
 public class RequestMetadata {
 
+  @Value("${app.client-salt}") String clientSalt;
+
   private final HttpServletRequest request;
 
   public RequestMetadata(HttpServletRequest request) {
     this.request = request;
   }
 
-  public Map<String, Object> getClientInfo() {
-    Map<String, Object> metadata = new HashMap<>();
+  public Map<String, String> getClientInfo() {
+    Map<String, String> metadata = new HashMap<>();
 
     // 1. Device/Browser Info (Using User-Agent)
     UserAgent userAgent = UserAgent.parseUserAgentString(request.getHeader("User-Agent"));
@@ -42,5 +46,13 @@ public class RequestMetadata {
       ip = request.getRemoteAddr();
     }
     return ip;
+  }
+
+  public String generateClientFingerprint() {
+    Map<String, String> clientInfo = getClientInfo();
+    String ip = request.getRemoteAddr();
+    String userAgent = clientInfo.get("userAgentRaw");
+    String normalizedInput = ip + userAgent.replaceAll("(Chrome|Firefox)/\\d+", "$1") + clientSalt;
+    return DigestUtils.sha256Hex(normalizedInput);
   }
 }

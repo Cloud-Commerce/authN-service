@@ -50,7 +50,8 @@ public class JwtServiceProvider {
 
     TokenDetails tokenDetails = TokenDetails.builder().username(userDetails.getUsername())
         .id(UUID.randomUUID().toString()).issuedAt(new Date()).state("Active")
-        .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs)).build();
+        .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+        .clientMetadata(requestMetadata.getClientInfo()).build();
 
     tokenDetails.setToken(Jwts.builder()
         .id(tokenDetails.getId())  // Include jti in the JWT
@@ -58,8 +59,8 @@ public class JwtServiceProvider {
         .issuer("edu.ecom.authn")
         .issuedAt(tokenDetails.getIssuedAt())
         .expiration(tokenDetails.getExpiration())
+        .claim("fp", requestMetadata.generateClientFingerprint())
         .claim("authorities", userDetails.getAuthorities())
-        .claims(requestMetadata.getClientInfo())
         .signWith(jwtSecretKey, SIG.HS512) // New signature method
         .compact());
 
@@ -77,13 +78,10 @@ public class JwtServiceProvider {
               .getPayload())
           .genuine(true)
           .expired(false);
-    } catch (ExpiredJwtException e) {
+    } catch (ExpiredJwtException e) { // Only for already expired tokens
       tokenDetails.claims(e.getClaims()).genuine(true).expired(true);
-      System.out.println("Expired JWT: " + e.getMessage());
-    } catch (JwtException e) {
-      // Handle other errors (invalid signature, malformed JWT)
+    } catch (JwtException e) { // Handle other errors (invalid signature, malformed JWT)
       tokenDetails.genuine(false);
-      System.err.println("Invalid JWT: " + e.getMessage());
     }
     return tokenDetails.build();
   }

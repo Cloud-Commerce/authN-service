@@ -3,6 +3,7 @@ package edu.ecom.authn.filter;
 import edu.ecom.authn.dto.AuthDetails;
 import edu.ecom.authn.dto.TokenDetails;
 import edu.ecom.authn.model.UserDetailsImpl;
+import edu.ecom.authn.security.RequestMetadata;
 import edu.ecom.authn.security.service.JwtServiceProvider;
 import edu.ecom.authn.security.service.TokenManagementService;
 import io.jsonwebtoken.Claims;
@@ -30,13 +31,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtServiceProvider jwtServiceProvider;
   private final TokenManagementService tokenManagementService;
+  private final RequestMetadata requestMetadata;
   private final String[] publicEndpoints;
 
   @Autowired
   public JwtAuthenticationFilter(JwtServiceProvider jwtServiceProvider,
-      TokenManagementService tokenManagementService, String[] publicEndpoints) {
+      TokenManagementService tokenManagementService, RequestMetadata requestMetadata, String[] publicEndpoints) {
     this.jwtServiceProvider = jwtServiceProvider;
     this.tokenManagementService = tokenManagementService;
+    this.requestMetadata = requestMetadata;
     this.publicEndpoints = publicEndpoints;
   }
 
@@ -52,29 +55,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       TokenDetails tokenDetails = Optional.ofNullable(extractToken(request))
           .map(jwtServiceProvider::parseToken).orElseThrow(() -> new ServletException("Missing Token"));
 
-      if (tokenDetails.isGenuine()) {
-        if(tokenDetails.isExpired()) {
-          throw new ServletException("Expired Token"); // TODO - implementation to be changed
-        }
-        Claims claims = tokenDetails.getClaims();
-
-        if(tokenManagementService.isTokenBlacklisted(claims.getId()))
-          throw new ServletException("Expired Session : User Logged out!");
-
-        String username = claims.getSubject();
-        Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(claims);
-
-        UserDetails userDetails = new UserDetailsImpl(null, username, tokenDetails.getToken(), authorities); // user password not needed here
-
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-            userDetails, null, userDetails.getAuthorities()); // synced with UsernamePasswordAuthenticationFilter strategy
-        WebAuthenticationDetails webAuthenticationDetails = new WebAuthenticationDetailsSource().buildDetails(request);
-
-        authentication.setDetails(AuthDetails.builder().webAuthenticationDetails(
-            webAuthenticationDetails).claims(claims).build());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+      if (!tokenDetails.isGenuine()) {
+        throw new ServletException("Invalid Token");
       }
+
+      Claims claims = tokenDetails.getClaims();
+
+      if(tokenManagementService.isTokenBlacklisted(claims.getId()))
+        throw new ServletException("Expired Session : User Logged out!");
+
+      if(tokenDetails.isExpired()) {
+        if(requestMetadata.generateClientFingerprint().equals(tokenDetails.getClaims().get("fp"))) {
+          throw new ServletException("Expired Token"); // TODO - implementation to be changed
+        } else {
+          throw new ServletException("Token stolen");
+        }
+      }
+
+      String username = claims.getSubject();
+      Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(claims);
+
+      UserDetails userDetails = new UserDetailsImpl(null, username, tokenDetails.getToken(), authorities); // user password not needed here
+
+      UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+          userDetails, null, userDetails.getAuthorities()); // synced with UsernamePasswordAuthenticationFilter strategy
+      WebAuthenticationDetails webAuthenticationDetails = new WebAuthenticationDetailsSource().buildDetails(request);
+
+      authentication.setDetails(AuthDetails.builder().webAuthenticationDetails(
+          webAuthenticationDetails).claims(claims).build());
+
+      SecurityContextHolder.getContext().setAuthentication(authentication);
     } catch (Exception ex) {
       // Log the exception
       logger.error("Could not set user authentication in security context: {}", ex);

@@ -1,6 +1,7 @@
 package edu.ecom.authn.filter;
 
 import edu.ecom.authn.dto.AuthDetails;
+import edu.ecom.authn.dto.TokenDetails;
 import edu.ecom.authn.model.UserDetailsImpl;
 import edu.ecom.authn.security.service.JwtServiceProvider;
 import edu.ecom.authn.security.service.TokenManagementService;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -47,9 +49,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
     try {
-      String token = extractToken(request);
-      if (token != null && jwtServiceProvider.validateToken(token)) {
-        Claims claims = jwtServiceProvider.extractAllClaims(token);
+      TokenDetails tokenDetails = Optional.ofNullable(extractToken(request))
+          .map(jwtServiceProvider::parseToken).orElseThrow(() -> new ServletException("Missing Token"));
+
+      if (tokenDetails.isGenuine()) {
+        if(tokenDetails.isExpired()) {
+          throw new ServletException("Expired Token"); // TODO - implementation to be changed
+        }
+        Claims claims = tokenDetails.getClaims();
 
         if(tokenManagementService.isTokenBlacklisted(claims.getId()))
           throw new ServletException("Expired Session : User Logged out!");
@@ -57,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username = claims.getSubject();
         Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(claims);
 
-        UserDetails userDetails = new UserDetailsImpl(null, username, token, authorities); // user password not needed here
+        UserDetails userDetails = new UserDetailsImpl(null, username, tokenDetails.getToken(), authorities); // user password not needed here
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
             userDetails, null, userDetails.getAuthorities()); // synced with UsernamePasswordAuthenticationFilter strategy

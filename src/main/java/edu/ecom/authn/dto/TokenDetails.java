@@ -1,5 +1,6 @@
 package edu.ecom.authn.dto;
 
+import io.jsonwebtoken.Claims;
 import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,4 +19,7 @@ public class TokenDetails {
   Date expiration;
   String state;
   String remarks;
+  boolean genuine;
+  boolean expired;
+  Claims claims;
 }

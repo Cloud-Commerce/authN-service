@@ -1,8 +1,10 @@
 package edu.ecom.authn.security.service;
 
 import edu.ecom.authn.dto.TokenDetails;
+import edu.ecom.authn.dto.TokenDetails.TokenDetailsBuilder;
 import edu.ecom.authn.security.RequestMetadata;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Jwts.SIG;
@@ -64,21 +66,30 @@ public class JwtServiceProvider {
     return tokenDetails;
   }
 
-  public String extractUsername(String token) {
-    return extractAllClaims(token).getSubject();
+  public TokenDetails parseToken(String token) {
+    TokenDetailsBuilder tokenDetails = TokenDetails.builder().token(token);
+    try {
+      // Parse with expiry check
+      tokenDetails.claims(Jwts.parser()
+              .verifyWith(jwtSecretKey)
+              .build()
+              .parseSignedClaims(token)
+              .getPayload())
+          .genuine(true)
+          .expired(false);
+    } catch (ExpiredJwtException e) {
+      tokenDetails.claims(e.getClaims()).genuine(true).expired(true);
+      System.out.println("Expired JWT: " + e.getMessage());
+    } catch (JwtException e) {
+      // Handle other errors (invalid signature, malformed JWT)
+      tokenDetails.genuine(false);
+      System.err.println("Invalid JWT: " + e.getMessage());
+    }
+    return tokenDetails.build();
   }
 
-  public boolean validateToken(String authToken) {
-    try {
-      Jwts.parser()
-          .verifyWith(jwtSecretKey)
-          .build()
-          .parseSignedClaims(authToken);
-      return true;
-    } catch (SecurityException | JwtException | IllegalArgumentException e) {
-      log.error("Invalid JWT token: {}", e.getMessage());
-      return false;
-    }
+  public String extractUsername(String token) {
+    return parseToken(token).getClaims().getSubject();
   }
 
   public Collection<? extends GrantedAuthority> extractAuthorities(Claims claims) {
@@ -88,11 +99,4 @@ public class JwtServiceProvider {
         .toList();
   }
 
-  public Claims extractAllClaims(String token) {
-    return Jwts.parser()
-        .verifyWith(jwtSecretKey)
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
-  }
 }

@@ -1,9 +1,9 @@
 package edu.ecom.authn.security.config;
 
-import edu.ecom.authn.filter.JwtAuthenticationFilter;
 import edu.ecom.authn.handler.CustomAccessDeniedHandler;
 import edu.ecom.authn.handler.CustomAuthenticationEntryPoint;
 import edu.ecom.authn.model.Role;
+import edu.ecom.authz.security.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -73,8 +73,8 @@ public class SecurityConfig {
 
   @Bean("publicEndpoints")
   protected String[] getPublicEndpoints() {
-   return new String[]{"/api/auth/signup", "/api/auth/login", "/actuator/**",
-       "/v3/api-docs/**", "/swagger-ui/**"};
+   return new String[]{"/api/auth/signup", "/api/auth/login", "/api/auth/relogin",
+       "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**"};
   }
 
   @Bean

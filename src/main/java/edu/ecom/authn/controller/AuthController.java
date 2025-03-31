@@ -1,14 +1,14 @@
 package edu.ecom.authn.controller;
 
-import edu.ecom.authn.dto.AuthDetails;
 import edu.ecom.authn.dto.ChangePasswordRequest;
 import edu.ecom.authn.dto.JwtResponse;
 import edu.ecom.authn.dto.LoginRequest;
 import edu.ecom.authn.dto.MessageResponse;
 import edu.ecom.authn.dto.SignupRequest;
-import edu.ecom.authn.dto.TokenDetails;
-import edu.ecom.authn.security.service.TokenManagementService;
 import edu.ecom.authn.service.UserDetailsServiceImpl;
+import edu.ecom.authz.security.dto.AuthDetails;
+import edu.ecom.authz.security.dto.TokenDetails;
+import edu.ecom.authz.security.service.TokenManagementService;
 import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

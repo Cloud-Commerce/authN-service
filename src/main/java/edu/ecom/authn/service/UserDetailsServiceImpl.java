@@ -2,7 +2,6 @@ package edu.ecom.authn.service;
 
 import edu.ecom.authn.entity.User;
 import edu.ecom.authn.model.Role;
-import edu.ecom.authn.model.UserDetailsImpl;
 import edu.ecom.authn.repository.UserRepository;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String username) {
-    return loadUserByUsername(username, UserDetailsImpl::build);
+    return loadUserByUsername(username, u -> u);
   }
 
   public UserDetails loadUserByUsername(String username, Function<User, UserDetails> mapper) {

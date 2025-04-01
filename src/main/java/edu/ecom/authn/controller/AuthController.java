@@ -8,9 +8,12 @@ import edu.ecom.authn.dto.SignupRequest;
 import edu.ecom.authn.service.UserDetailsServiceImpl;
 import edu.ecom.authz.security.dto.AuthDetails;
 import edu.ecom.authz.security.dto.TokenDetails;
-import edu.ecom.authz.security.service.TokenManagementService;
+import edu.ecom.authz.security.service.JwtAuthHelper;
+import edu.ecom.authz.security.service.TokenSessionManagementService;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.ServletException;
 import jakarta.validation.Valid;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,14 +32,40 @@ public class AuthController {
 
   private final AuthenticationManager authenticationManager;
   private final UserDetailsServiceImpl userDetailsService;
-  private final TokenManagementService tokenManagementService;
+  private final TokenSessionManagementService tokenManagementService;
+  private final JwtAuthHelper authHelper;
 
   @Autowired
   public AuthController(AuthenticationManager authenticationManager,
-      UserDetailsServiceImpl userDetailsService, TokenManagementService tokenManagementService) {
+      UserDetailsServiceImpl userDetailsService, TokenSessionManagementService tokenManagementService,
+      JwtAuthHelper authHelper) {
     this.authenticationManager = authenticationManager;
     this.userDetailsService = userDetailsService;
     this.tokenManagementService = tokenManagementService;
+    this.authHelper = authHelper;
+  }
+
+  @PostMapping("/relogin")
+  public ResponseEntity<?> reAuthenticateUser(@Valid @RequestHeader("Authorization") String bearerToken)
+      throws ServletException {
+    String token = bearerToken.replace("Bearer ", "");
+    Objects.requireNonNull(token);
+    // Validate token and fetch profile...
+    TokenDetails tokenDetails = authHelper.getVerifiedDetails();
+
+    if(!tokenDetails.isExpired()) {
+      return ResponseEntity.ok().body(new MessageResponse("Token still active!"));
+    }
+
+    Authentication authentication = authHelper.createAuthentication(tokenDetails);
+
+    if (tokenManagementService.getActiveSessionCountForUser(tokenDetails.getClaims().getSubject()) >= 5) {
+      return ResponseEntity.badRequest().body(new MessageResponse("Error: Maximum active sessions reached!"));
+    }
+
+    TokenDetails newSession = tokenManagementService.createNewStatelessSession(authentication);
+
+    return ResponseEntity.accepted().body(new JwtResponse(newSession.getToken()));
   }
 
   @PostMapping("/login")

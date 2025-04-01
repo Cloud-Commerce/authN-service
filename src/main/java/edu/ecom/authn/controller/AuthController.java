@@ -90,7 +90,7 @@ public class AuthController {
 
     userDetailsService.registerUser(signUpRequest.getUsername(), signUpRequest.getPassword());
 
-    return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    return ResponseEntity.accepted().body(new MessageResponse("User registered successfully!"));
   }
 
   @PostMapping("/change-password")

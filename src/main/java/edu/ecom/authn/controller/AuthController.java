@@ -46,12 +46,17 @@ public class AuthController {
   }
 
   @PostMapping("/relogin")
-  public ResponseEntity<?> reAuthenticateUser(@Valid @RequestHeader("Authorization") String bearerToken)
-      throws ServletException {
+  public ResponseEntity<?> reAuthenticateUser(@Valid @RequestHeader("Authorization") String bearerToken) {
     String token = bearerToken.replace("Bearer ", "");
     Objects.requireNonNull(token);
-    // Validate token and fetch profile...
-    TokenDetails tokenDetails = authHelper.getVerifiedDetails();
+
+    TokenDetails tokenDetails;
+    try {
+      // Validate token and fetch profile...
+      tokenDetails = authHelper.getVerifiedDetails();
+    } catch (ServletException e) {
+      return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+    }
 
     if(!tokenDetails.isExpired()) {
       return ResponseEntity.ok().body(new MessageResponse("Token still active!"));

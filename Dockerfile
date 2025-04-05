@@ -1,32 +1,26 @@
 # Build stage
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# 1. Copy ALL Maven wrapper files first
-COPY .mvn .mvn
-COPY mvnw .
+# Copy pom.xml
+COPY pom.xml ./
 
-# 2. Fix permissions and line endings (works for both Windows/Linux)
-RUN apt-get update && \
-    apt-get install -y dos2unix && \
-    dos2unix mvnw && \
-    chmod +x mvnw && \
-    ./mvnw --version
+# Download dependencies (this will be cached if pom.xml doesn't change)
+RUN mvn dependency:go-offline -B
 
-# 3. Copy remaining application files
-COPY pom.xml .
-COPY src src
+# Copy source code
+COPY src ./src
 
-# Install dependencies and build
-RUN ./mvnw package -DskipTests
+# Build the application
+RUN mvn package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY db db
-COPY --from=builder /app/target/authN-service-*.jar ./authN-service.jar
+
+COPY --from=builder /app/target/*.jar ./service.jar
 
 EXPOSE 8501
 
-ENTRYPOINT ["java", "-jar", "authN-service.jar"]
+ENTRYPOINT ["java", "-jar", "service.jar"]

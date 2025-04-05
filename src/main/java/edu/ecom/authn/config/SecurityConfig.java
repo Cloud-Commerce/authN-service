@@ -1,9 +1,9 @@
-package edu.ecom.authn.security.config;
+package edu.ecom.authn.config;
 
+import edu.ecom.authn.filter.JwtAuthenticationFilter;
 import edu.ecom.authn.handler.CustomAccessDeniedHandler;
 import edu.ecom.authn.handler.CustomAuthenticationEntryPoint;
 import edu.ecom.authn.model.Role;
-import edu.ecom.authz.security.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,8 +14,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -83,9 +81,4 @@ public class SecurityConfig {
     return authConfig.getAuthenticationManager();
   }
 
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    // BCrypt password encoding with strength 12
-    return new BCryptPasswordEncoder(12);
-  }
 }

@@ -34,7 +34,16 @@ eureka:
   instance:
     preferIpAddress: true
     lease-renewal-interval-in-seconds: 5 # Heartbeat interval - DO NOT DO THIS IN PRODUCTION
+feign:
+  httpclient:
+    enabled: false
+  java-http:
+    enabled: true
+    connect-timeout: 5s
+    read-timeout: 10s
+
 app:
+  secret-key: ${APP_SECRET_KEY:0CtrGzxWwSOJ6bwyvxyf8eSHjbs0z6gfCUyb7U243zc=}
   jwt:
     # Generate a 512-bit (64-byte) random key by command: openssl rand -base64 64
     secret: TwIlWN/981FuI7Y2x+JSGDm15Hj54+U2DDtlr3Ij2Ycke4qpiwI/pQMSGoRlw8Vl8+EiZPw4/aC3HqBhUDWdog==

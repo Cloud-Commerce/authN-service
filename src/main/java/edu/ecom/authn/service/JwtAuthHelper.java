@@ -1,9 +1,8 @@
 package edu.ecom.authn.service;
 
-import edu.ecom.authn.dto.UserServiceResponse;
-import edu.ecom.authn.model.UserDetailsImpl;
 import edu.ecom.authn.dto.AuthDetails;
 import edu.ecom.authn.dto.TokenDetails;
+import edu.ecom.authn.dto.UserDetailsDto;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +11,6 @@ import java.util.Optional;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -57,7 +55,8 @@ public class JwtAuthHelper {
     Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(
         tokenDetails.getClaims());
 
-    UserDetails userDetails = new UserDetailsImpl(null, username, tokenDetails.getToken(), authorities); // user password not needed here
+    UserDetailsDto userDetails = UserDetailsDto.builder()
+        .username(username).password(tokenDetails.getToken()).authorities(authorities).build(); // user password not needed here
 
     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
         userDetails, null, userDetails.getAuthorities()); // synced with UsernamePasswordAuthenticationFilter strategy
@@ -77,11 +76,11 @@ public class JwtAuthHelper {
     return null;
   }
 
-  public Authentication createAuthentication(UserServiceResponse response) {
-    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(response.userDetails(),
-        null, response.userDetails().getAuthorities());
+  public Authentication createAuthentication(UserDetailsDto userDetails) {
+    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails,
+        null, userDetails.getAuthorities());
     WebAuthenticationDetails webAuthenticationDetails = (new WebAuthenticationDetailsSource()).buildDetails(this.requestMetadata.getRequest());
     authentication.setDetails(AuthDetails.builder().webAuthenticationDetails(webAuthenticationDetails).build());
-    return null;
+    return authentication;
   }
 }

@@ -1,5 +1,5 @@
 package edu.ecom.authn.dto;
 
-import org.springframework.security.core.userdetails.UserDetails;
+import edu.ecom.authn.model.UserDetailsImpl;
 
-public record UserServiceResponse(boolean success, UserDetails userDetails, String message, String error) {}
+public record UserServiceResponse(boolean success, UserDetailsImpl userDetails, String message, String error) {}

@@ -32,7 +32,9 @@ public class AuthController {
   public ResponseEntity<?> registerUser(@Valid @RequestBody CreateUserRequest userAuthRequest) {
     try {
       String response = authService.registerUser(userAuthRequest);
-      return ResponseEntity.accepted().body(new MessageResponse(response));
+      return ResponseEntity.accepted().body(response);
+    } catch(FeignException e) {
+      return ResponseEntity.badRequest().body(new MessageResponse(e.contentUTF8()));
     } catch(Exception e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
     }
@@ -65,6 +67,8 @@ public class AuthController {
     try {
       authService.changePassword(request);
       return ResponseEntity.ok("Password updated successfully");
+    } catch(FeignException e) {
+      return ResponseEntity.badRequest().body(new MessageResponse(e.contentUTF8()));
     } catch(Exception e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
     }

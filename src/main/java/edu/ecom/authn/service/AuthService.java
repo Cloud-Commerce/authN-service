@@ -6,7 +6,7 @@ import edu.ecom.authn.dto.ChangePasswordRequest;
 import edu.ecom.authn.dto.CreateUserRequest;
 import edu.ecom.authn.dto.LoginRequest;
 import edu.ecom.authn.dto.TokenDetails;
-import edu.ecom.authn.dto.UserServiceResponse;
+import edu.ecom.authn.dto.UserDetailsDto;
 import edu.ecom.authn.model.Role;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.ServletException;
@@ -37,28 +37,26 @@ public class AuthService {
   // Method to register a new user
   public String registerUser(CreateUserRequest userAuthRequest) {
     userAuthRequest.setRoles(List.of(Role.ROLE_CUSTOMER));
-    ResponseEntity<UserServiceResponse> response = userServiceClient.registerUser(userAuthRequest);
-    UserServiceResponse responseBody = Objects.requireNonNull(response.getBody());
+    ResponseEntity<?> response = userServiceClient.registerUser(userAuthRequest);
 
     if (!response.getStatusCode().is2xxSuccessful()) {
-      throw new RuntimeException("User registration failed: " + responseBody.error());
+      throw new RuntimeException("User registration failed: " + response.getBody());
     }
-    return responseBody.message();
+    return (String) Objects.requireNonNull(response.getBody());
   }
 
   public TokenDetails authenticateUser(LoginRequest request) {
-    ResponseEntity<UserServiceResponse> response = userServiceClient.verifyCredentials(request);
-    UserServiceResponse responseBody = Objects.requireNonNull(response.getBody());
+    ResponseEntity<?> response = userServiceClient.getVerifiedUser(request);
 
     if (!response.getStatusCode().is2xxSuccessful()) {
-      throw new BadCredentialsException(responseBody.error());
+      throw new BadCredentialsException((String) response.getBody());
     }
 
     if (tokenManagementService.getActiveSessionCountForUser(request.getUsername()) >= 5) {
       throw new RuntimeException("Error: Maximum active sessions reached!");
     }
 
-    Authentication authentication = authHelper.createAuthentication(responseBody);
+    Authentication authentication = authHelper.createAuthentication((UserDetailsDto) Objects.requireNonNull(response.getBody()));
     return tokenManagementService.createNewStatelessSession(authentication);
   }
 
@@ -84,11 +82,10 @@ public class AuthService {
   public void changePassword(ChangePasswordRequest request) {
     Claims claims = ((AuthDetails) SecurityContextHolder.getContext().getAuthentication().getDetails()).getClaims();
     request.setUsername(claims.getSubject());
-    ResponseEntity<UserServiceResponse> response = userServiceClient.changePassword(request);
-    UserServiceResponse responseBody = Objects.requireNonNull(response.getBody());
+    ResponseEntity<?> response = userServiceClient.changePassword(request);
 
     if (!response.getStatusCode().is2xxSuccessful()) {
-      throw new RuntimeException("Password change failed: " + responseBody.error());
+      throw new RuntimeException("Password change failed: " + response.getBody());
     }
     tokenManagementService.invalidateAllTokensForUser(claims.getSubject());
   }

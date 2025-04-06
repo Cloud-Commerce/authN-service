@@ -1,17 +1,21 @@
 package edu.ecom.authn.model;
 
 import java.util.Collection;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Value;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
 @Value
 public class UserDetailsImpl implements UserDetails {
 
   Long id;
   String username;
   String password;
-  Collection<? extends GrantedAuthority> authorities;
+  Collection<SimpleGrantedAuthority> authorities;
 
   @Override
   public boolean isAccountNonExpired() {

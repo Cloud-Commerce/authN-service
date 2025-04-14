@@ -5,6 +5,7 @@ import edu.ecom.authn.dto.AuthDetails;
 import edu.ecom.authn.dto.ChangePasswordRequest;
 import edu.ecom.authn.dto.CreateUserRequest;
 import edu.ecom.authn.dto.LoginRequest;
+import edu.ecom.authn.dto.MessageResponse;
 import edu.ecom.authn.dto.TokenDetails;
 import edu.ecom.authn.dto.UserDetailsDto;
 import edu.ecom.authn.model.Role;
@@ -42,7 +43,7 @@ public class AuthService {
     if (!response.getStatusCode().is2xxSuccessful()) {
       throw new RuntimeException("User registration failed: " + response.getBody());
     }
-    return (String) Objects.requireNonNull(response.getBody());
+    return ((MessageResponse) Objects.requireNonNull(response.getBody())).message();
   }
 
   public TokenDetails authenticateUser(LoginRequest request) {
@@ -60,22 +61,27 @@ public class AuthService {
     return tokenManagementService.createNewStatelessSession(authentication);
   }
 
-  public TokenDetails reAuthenticateUser(String bearerToken) throws ServletException {
+  public TokenDetails reAuthenticateUser(String bearerToken, boolean throwErrorIfActive) throws ServletException {
     String token = bearerToken.replace("Bearer ", "");
     Objects.requireNonNull(token);
 
     // Validate token and fetch profile...
     TokenDetails tokenDetails = authHelper.getVerifiedDetails();
 
+    Authentication authentication = authHelper.createAuthentication(tokenDetails);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
     if(!tokenDetails.isExpired()) {
-      throw new RuntimeException("Token still active!");
+      if(throwErrorIfActive)
+        throw new RuntimeException("Token still active!");
+      else
+        return tokenDetails;
     }
 
     if (tokenManagementService.getActiveSessionCountForUser(tokenDetails.getClaims().getSubject()) >= 5) {
       throw new RuntimeException("Error: Maximum active sessions reached!");
     }
 
-    Authentication authentication = authHelper.createAuthentication(tokenDetails);
     return tokenManagementService.createNewStatelessSession(authentication);
   }
 

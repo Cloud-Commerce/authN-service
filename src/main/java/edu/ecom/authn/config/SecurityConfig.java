@@ -16,7 +16,6 @@ import org.springframework.security.config.annotation.web.configurers.AuthorizeH
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -41,11 +40,11 @@ public class SecurityConfig {
         )
 
         // Logout configuration
-        .logout(logout -> logout
-            .logoutRequestMatcher(new AntPathRequestMatcher("/api/logout"))
-            .clearAuthentication(true)
-            .invalidateHttpSession(true)
-        )
+//        .logout(logout -> logout
+//            .logoutRequestMatcher(new AntPathRequestMatcher("/api/auth/logout"))
+//            .clearAuthentication(true)
+//            .invalidateHttpSession(true)
+//        )
 
         // Add JWT filter
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -71,7 +70,7 @@ public class SecurityConfig {
 
   @Bean("publicEndpoints")
   protected String[] getPublicEndpoints() {
-   return new String[]{"/api/auth/signup", "/api/auth/login", "/api/auth/relogin",
+   return new String[]{"/api/auth/signup", "/api/auth/login", "/api/auth/relogin", "/api/auth/verify",
        "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**"};
   }
 

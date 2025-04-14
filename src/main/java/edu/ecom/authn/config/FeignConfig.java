@@ -1,13 +1,10 @@
 package edu.ecom.authn.config;
 
 import edu.ecom.authn.service.HmacSigningService;
-import feign.FeignException;
 import feign.Request;
 import feign.RequestInterceptor;
 import feign.Retryer;
 import feign.Target;
-import feign.codec.ErrorDecoder;
-import jakarta.ws.rs.BadRequestException;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -56,10 +53,6 @@ public class FeignConfig {
     // 2. Retry Configuration
     @Bean
     public Retryer feignRetryer() {
-        return new Retryer.Default(
-            1000,     // Initial interval (1s)
-            5000,     // Max interval (5s)
-            3         // Max attempts
-        );
+        return Retryer.NEVER_RETRY;
     }
 }

@@ -1,6 +1,7 @@
 package edu.ecom.authn.dto;
 
 import io.jsonwebtoken.Claims;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -24,4 +25,5 @@ public class TokenDetails {
   boolean expired;
   Claims claims;
   Map<String, String> clientMetadata;
+  Collection<String> roles;
 }

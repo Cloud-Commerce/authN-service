@@ -11,6 +11,8 @@ import feign.FeignException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -32,7 +34,7 @@ public class AuthController {
   public ResponseEntity<?> registerUser(@Valid @RequestBody CreateUserRequest userAuthRequest) {
     try {
       String response = authService.registerUser(userAuthRequest);
-      return ResponseEntity.accepted().body(response);
+      return ResponseEntity.accepted().body(new MessageResponse(response));
     } catch(FeignException e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.contentUTF8()));
     } catch(Exception e) {
@@ -55,8 +57,20 @@ public class AuthController {
   @PostMapping("/relogin")
   public ResponseEntity<?> reAuthenticateUser(@Valid @RequestHeader("Authorization") String bearerToken) {
     try {
-      TokenDetails newSession = authService.reAuthenticateUser(bearerToken);
+      TokenDetails newSession = authService.reAuthenticateUser(bearerToken, true);
     return ResponseEntity.accepted().body(new JwtResponse(newSession.getToken()));
+    } catch(Exception e) {
+      return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+    }
+  }
+
+  @PostMapping("/verify")
+  public ResponseEntity<?> verifyToken(@Valid @RequestHeader("Authorization") String bearerToken) {
+    try {
+      TokenDetails newSession = authService.reAuthenticateUser(bearerToken, false);
+      newSession.setRoles(SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(
+          GrantedAuthority::getAuthority).toList());
+      return ResponseEntity.accepted().body(newSession);
     } catch(Exception e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
     }
@@ -66,7 +80,7 @@ public class AuthController {
   public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
     try {
       authService.changePassword(request);
-      return ResponseEntity.ok("Password updated successfully");
+      return ResponseEntity.ok(new MessageResponse("Password updated successfully"));
     } catch(FeignException e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.contentUTF8()));
     } catch(Exception e) {
@@ -78,7 +92,7 @@ public class AuthController {
   public ResponseEntity<?> logout() {
     try {
       authService.logout();
-      return ResponseEntity.ok("Logged out successfully");
+      return ResponseEntity.ok(new MessageResponse("Logged out successfully"));
     } catch(Exception e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
     }

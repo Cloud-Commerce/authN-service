@@ -10,7 +10,6 @@ import edu.ecom.authn.dto.TokenDetails;
 import edu.ecom.authn.dto.UserDetailsDto;
 import edu.ecom.authn.model.Role;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.ServletException;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +60,7 @@ public class AuthService {
     return tokenManagementService.createNewStatelessSession(authentication);
   }
 
-  public TokenDetails reAuthenticateUser(String bearerToken, boolean throwErrorIfActive) throws ServletException {
+  public TokenDetails reAuthenticateUser(String bearerToken, boolean throwErrorIfActive) {
     String token = bearerToken.replace("Bearer ", "");
     Objects.requireNonNull(token);
 
@@ -86,6 +85,9 @@ public class AuthService {
   }
 
   public void changePassword(ChangePasswordRequest request) {
+    if(request.getOldPassword().equals(request.getNewPassword())) {
+      throw new RuntimeException("New password cannot be the same as the old password!");
+    }
     Claims claims = ((AuthDetails) SecurityContextHolder.getContext().getAuthentication().getDetails()).getClaims();
     request.setUsername(claims.getSubject());
     ResponseEntity<?> response = userServiceClient.changePassword(request);

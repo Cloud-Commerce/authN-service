@@ -29,7 +29,6 @@ public class TokenDetails {
   @JsonIgnore
   Claims claims;
 
-  @JsonIgnore
   Map<String, String> clientMetadata;
 
   Collection<String> roles;

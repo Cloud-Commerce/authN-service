@@ -40,7 +40,7 @@ public class TokenSessionManagementService {
 
   public void markAsBlacklisted(String username, String jti, Date expiration) {
     String globalBlacklistKey = getGlobalBlacklistKey(jti);
-    TokenDetails value = TokenDetails.builder().state("Blacklisted").build();
+    TokenDetails value = TokenDetails.builder().build();
     long ttlInMillis = expiration.getTime() - System.currentTimeMillis() + 100;
     redisTemplate.opsForValue().set(globalBlacklistKey, value, ttlInMillis, TimeUnit.MILLISECONDS);
     redisTemplate.delete(getSessionKeyForUser(username, jti));
@@ -51,7 +51,7 @@ public class TokenSessionManagementService {
   }
 
   public boolean isTokenBlacklisted(String jti) {
-    return Boolean.TRUE.equals(redisTemplate.hasKey(getGlobalBlacklistKey(jti)));
+    return redisTemplate.hasKey(getGlobalBlacklistKey(jti));
   }
 
   public int getActiveSessionCountForUser(String username) {

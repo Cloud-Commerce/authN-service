@@ -1,5 +1,6 @@
 package edu.ecom.authn.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.jsonwebtoken.Claims;
 import java.util.Collection;
 import java.util.Date;
@@ -15,15 +16,26 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TokenDetails {
   String username;
+
   String id;
+
+  @JsonIgnore
   String token;
+
   Date issuedAt;
+
   Date expiration;
+
+  @JsonIgnore
+  Claims claims;
+
+  @JsonIgnore
+  Map<String, String> clientMetadata;
+
+  Collection<String> roles;
+
   String state;
   String remarks;
   boolean genuine;
   boolean expired;
-  Claims claims;
-  Map<String, String> clientMetadata;
-  Collection<String> roles;
 }

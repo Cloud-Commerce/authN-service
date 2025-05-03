@@ -48,19 +48,19 @@ public class JwtServiceProvider {
 //        .collect(Collectors.toList()));
 
     TokenDetails tokenDetails = TokenDetails.builder().username(userDetails.getUsername())
-        .id(UUID.randomUUID().toString()).issuedAt(new Date()).state("Active")
+        .id(UUID.randomUUID().toString()).issuedAt(new Date()).roles(userDetails.getRoles())
         .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
         .clientMetadata(requestMetadata.getClientInfo()).build();
 
     tokenDetails.setToken(Jwts.builder()
         .id(tokenDetails.getId())  // Include jti in the JWT
         .subject(tokenDetails.getUsername())
-        .issuer("edu.ecom.authn")
+        .issuer("edu.ecom")
         .issuedAt(tokenDetails.getIssuedAt())
         .expiration(tokenDetails.getExpiration())
         .claim("fp", requestMetadata.generateClientFingerprint())
         .claim("authorities", userDetails.getAuthorities())
-        .signWith(jwtSecretKey, SIG.HS512) // New signature method
+        .signWith(jwtSecretKey, SIG.HS256) // New signature method
         .compact());
 
     return tokenDetails;
@@ -70,15 +70,14 @@ public class JwtServiceProvider {
     TokenDetailsBuilder tokenDetails = TokenDetails.builder().token(token);
     try {
       // Parse with expiry check
-      tokenDetails.claims(Jwts.parser()
-              .verifyWith(jwtSecretKey)
-              .build()
-              .parseSignedClaims(token)
-              .getPayload())
-          .genuine(true)
-          .expired(false);
+      Claims payload = Jwts.parser()
+          .verifyWith(jwtSecretKey)
+          .build()
+          .parseSignedClaims(token)
+          .getPayload();
+      tokenDetails.claims(payload).expiration(payload.getExpiration()).genuine(true).expired(false);
     } catch (ExpiredJwtException e) { // Only for already expired tokens
-      tokenDetails.claims(e.getClaims()).genuine(true).expired(true);
+      tokenDetails.claims(e.getClaims()).expiration(e.getClaims().getExpiration()).genuine(true).expired(true);
     } catch (JwtException e) { // Handle other errors (invalid signature, malformed JWT)
       tokenDetails.genuine(false);
     }

@@ -47,10 +47,12 @@ feign:
 
 app:
   s2s-comm:
+    # Generate a Base64 encoded 256-bit (32-byte) random key by command: openssl rand -base64 32
     secret: ${APP_S2S_COMM_SECRET:0CtrGzxWwSOJ6bwyvxyf8eSHjbs0z6gfCUyb7U243zc=}
   jwt:
-    # Generate a 512-bit (64-byte) random key by command: openssl rand -base64 64
-    secret: ${APP_JWT_SECRET:TwIlWN/981FuI7Y2x+JSGDm15Hj54+U2DDtlr3Ij2Ycke4qpiwI/pQMSGoRlw8Vl8+EiZPw4/aC3HqBhUDWdog==}
+    # Generate a Base64 encoded 256-bit (32-byte) random key by command: openssl rand -base64 32
+    secret: ${APP_JWT_SECRET:IX5kf1/J8adOLK81NhtQMRHPdX3S85fbf82TefA6Iuc=}
     expiration-ms: 900000  # 15 minutes in milliseconds
   client-fp:
-    salt: ${APP_CLIENT_FP_SALT:5unpGiaw4rR3nPritDnAQw==}
+    # Generate a Base64 encoded 128-bit (16-byte) random key by command: openssl rand -base64 16
+    salt: ${APP_CLIENT_FP_SALT:XrAl3NgHvNyR5p7MtHl2Ug==}

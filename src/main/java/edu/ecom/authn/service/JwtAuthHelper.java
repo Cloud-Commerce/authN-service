@@ -4,7 +4,6 @@ import edu.ecom.authn.dto.AuthDetails;
 import edu.ecom.authn.dto.TokenDetails;
 import edu.ecom.authn.dto.UserDetailsDto;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collection;
 import java.util.Optional;
@@ -13,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,22 +29,22 @@ public class JwtAuthHelper {
     this.requestMetadata = requestMetadata;
   }
 
-  public TokenDetails getVerifiedDetails() throws ServletException {
+  public TokenDetails getVerifiedDetails() {
     TokenDetails tokenDetails = Optional.ofNullable(extractToken(requestMetadata.getRequest()))
-        .map(jwtServiceProvider::parseToken).orElseThrow(() -> new ServletException("Missing Token"));
+        .map(jwtServiceProvider::parseToken).orElseThrow(() -> new SessionAuthenticationException("Missing Token"));
 
     if (!tokenDetails.isGenuine()) {
-      throw new ServletException("Invalid Token");
+      throw new SessionAuthenticationException("Invalid Token");
     }
 
     Claims claims = tokenDetails.getClaims();
 
     if(tokenSessionManagementService.isTokenBlacklisted(claims.getId()))
-      throw new ServletException("Expired Session : User Logged out!");
+      throw new SessionAuthenticationException("Expired Session : User Logged out!");
 
     if(tokenDetails.isExpired()) {
       if(!requestMetadata.generateClientFingerprint().equals(claims.get("fp"))) {
-        throw new ServletException("Token stolen");
+        throw new SessionAuthenticationException("Token stolen");
       }
     }
     return tokenDetails;

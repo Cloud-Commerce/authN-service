@@ -29,8 +29,11 @@ server:
   port: 8501
 eureka:
   client:
+    initial-instance-info-replication-interval-seconds: 10  # Default is 40
+    registry-fetch-interval-seconds: 10  # Default is 30
     serviceUrl:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka} # Discovery Server Address
+
   instance:
     preferIpAddress: true
     lease-renewal-interval-in-seconds: 5 # Heartbeat interval - DO NOT DO THIS IN PRODUCTION
@@ -43,9 +46,11 @@ feign:
     read-timeout: 10s
 
 app:
-  secret-key: ${APP_SECRET_KEY:0CtrGzxWwSOJ6bwyvxyf8eSHjbs0z6gfCUyb7U243zc=}
+  s2s-comm:
+    secret: ${APP_S2S_COMM_SECRET:0CtrGzxWwSOJ6bwyvxyf8eSHjbs0z6gfCUyb7U243zc=}
   jwt:
     # Generate a 512-bit (64-byte) random key by command: openssl rand -base64 64
-    secret: TwIlWN/981FuI7Y2x+JSGDm15Hj54+U2DDtlr3Ij2Ycke4qpiwI/pQMSGoRlw8Vl8+EiZPw4/aC3HqBhUDWdog==
+    secret: ${APP_JWT_SECRET:TwIlWN/981FuI7Y2x+JSGDm15Hj54+U2DDtlr3Ij2Ycke4qpiwI/pQMSGoRlw8Vl8+EiZPw4/aC3HqBhUDWdog==}
     expiration-ms: 900000  # 15 minutes in milliseconds
-  client-salt: 5unpGiaw4rR3nPritDnAQw==
+  client-fp:
+    salt: ${APP_CLIENT_FP_SALT:5unpGiaw4rR3nPritDnAQw==}

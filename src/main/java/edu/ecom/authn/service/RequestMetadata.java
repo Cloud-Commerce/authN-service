@@ -14,7 +14,7 @@ import org.springframework.web.context.annotation.RequestScope;
 @RequestScope
 public class RequestMetadata {
 
-  @Value("${app.client-salt}") String clientSalt;
+  @Value("${app.client-fp.salt}") String clientFpSalt;
 
   @Getter
   private final HttpServletRequest request;
@@ -54,7 +54,7 @@ public class RequestMetadata {
     Map<String, String> clientInfo = getClientInfo();
     String ip = request.getRemoteAddr();
     String userAgent = clientInfo.get("userAgentRaw");
-    String normalizedInput = ip + userAgent.replaceAll("(Chrome|Firefox)/\\d+", "$1") + clientSalt;
+    String normalizedInput = ip + userAgent.replaceAll("(Chrome|Firefox)/\\d+", "$1") + clientFpSalt;
     return DigestUtils.sha256Hex(normalizedInput);
   }
 }

@@ -100,6 +100,6 @@ public class AuthService {
 
   public void logout() {
     Claims claims = ((AuthDetails) SecurityContextHolder.getContext().getAuthentication().getDetails()).getClaims();
-    tokenManagementService.removeActiveSession(claims.getSubject(), claims.getId(), claims.getExpiration());
+    tokenManagementService.removeActiveSession(claims.getSubject(), claims.getId());
   }
 }

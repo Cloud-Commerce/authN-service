@@ -84,7 +84,7 @@ public class JwtServiceProvider {
 
   private static void populateTokenDetails(TokenDetailsBuilder tokenDetails, Claims claims, boolean expired) {
     tokenDetails.claims(claims).username(claims.getSubject()).id(claims.getId())
-        .expiration(claims.getExpiration()).genuine(true).expired(expired);
+        .issuedAt(claims.getIssuedAt()).expiration(claims.getExpiration()).genuine(true).expired(expired);
   }
 
   public Collection<? extends GrantedAuthority> extractAuthorities(Claims claims) {

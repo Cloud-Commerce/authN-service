@@ -2,7 +2,6 @@ package edu.ecom.authn.service;
 
 import edu.ecom.authn.dto.TokenDetails;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,7 +39,7 @@ public class TokenSessionManagementService {
     return String.format("user:sessions:%s:%s", username, jti);
   }
 
-  public void removeActiveSession(String username, String jti, Date expiration) {
+  public void removeActiveSession(String username, String jti) {
     redisTemplate.delete(getActiveSessionKeyForUser(username, jti));
   }
 
@@ -53,14 +52,9 @@ public class TokenSessionManagementService {
   }
 
   public void invalidateAllTokensForUser(String username) {
-//    getKeyValuesByPrefix(getSessionKeyForUser(username, "")).forEach((key, tokenDetails) -> {
-//      markAsBlacklisted(tokenDetails.getId(), tokenDetails.getExpiresAt());
-//      redisTemplate.delete(key);
-//    });
-
     List<String> activeSessionKeysByPrefix = getKeysByPrefix(getActiveSessionKeyForUser(username, ""));
     activeSessionKeysByPrefix.stream().map(redisTemplate.opsForValue()::getAndDelete)
-        .filter(Objects::nonNull).forEach(tokenDetails -> removeActiveSession(username, tokenDetails.getId(), tokenDetails.getExpiration()));
+        .filter(Objects::nonNull).forEach(tokenDetails -> removeActiveSession(username, tokenDetails.getId()));
   }
 
   private Map<String, TokenDetails> getKeyValuesByPrefix(String prefix) {

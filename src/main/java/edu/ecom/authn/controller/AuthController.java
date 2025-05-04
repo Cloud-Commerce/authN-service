@@ -70,7 +70,9 @@ public class AuthController {
       TokenDetails newSession = authService.reAuthenticateUser(bearerToken, false);
       newSession.setRoles(SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(
           GrantedAuthority::getAuthority).toList());
-      return ResponseEntity.accepted().body(newSession);
+      return ResponseEntity.accepted()
+          .header("Authorization", "Bearer " + newSession.getToken())
+          .body(newSession);
     } catch(Exception e) {
       return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
     }

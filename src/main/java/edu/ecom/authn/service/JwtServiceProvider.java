@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -42,13 +43,10 @@ public class JwtServiceProvider {
   public TokenDetails generateToken(Authentication authentication) {
     UserDetailsDto userDetails = (UserDetailsDto) authentication.getPrincipal();
 
-//    Map<String, Object> claims = new HashMap<>();
-//    claims.put("roles", userDetails.getAuthorities().stream()
-//        .map(GrantedAuthority::getAuthority)
-//        .collect(Collectors.toList()));
+    String jti = Optional.ofNullable(userDetails.getPassword()).orElseGet(() -> UUID.randomUUID().toString());
 
     TokenDetails tokenDetails = TokenDetails.builder().username(userDetails.getUsername())
-        .id(UUID.randomUUID().toString()).issuedAt(new Date()).roles(userDetails.getRoles())
+        .id(jti).issuedAt(new Date()).roles(userDetails.getRoles())
         .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
         .clientMetadata(requestMetadata.getClientInfo()).build();
 
@@ -70,22 +68,27 @@ public class JwtServiceProvider {
     TokenDetailsBuilder tokenDetails = TokenDetails.builder().token(token);
     try {
       // Parse with expiry check
-      Claims payload = Jwts.parser()
+      Claims claims = Jwts.parser()
           .verifyWith(jwtSecretKey)
           .build()
           .parseSignedClaims(token)
           .getPayload();
-      tokenDetails.claims(payload).expiration(payload.getExpiration()).genuine(true).expired(false);
+      populateTokenDetails(tokenDetails, claims, false);
     } catch (ExpiredJwtException e) { // Only for already expired tokens
-      tokenDetails.claims(e.getClaims()).expiration(e.getClaims().getExpiration()).genuine(true).expired(true);
+      populateTokenDetails(tokenDetails, e.getClaims(), true);
     } catch (JwtException e) { // Handle other errors (invalid signature, malformed JWT)
       tokenDetails.genuine(false);
     }
     return tokenDetails.build();
   }
 
+  private static void populateTokenDetails(TokenDetailsBuilder tokenDetails, Claims claims, boolean expired) {
+    tokenDetails.claims(claims).username(claims.getSubject()).id(claims.getId())
+        .expiration(claims.getExpiration()).genuine(true).expired(expired);
+  }
+
   public String extractUsername(String token) {
-    return parseToken(token).getClaims().getSubject();
+    return parseToken(token).getUsername();
   }
 
   public Collection<? extends GrantedAuthority> extractAuthorities(Claims claims) {

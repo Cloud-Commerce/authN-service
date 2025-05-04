@@ -51,12 +51,12 @@ public class JwtAuthHelper {
   }
 
   public Authentication createAuthentication(TokenDetails tokenDetails) {
-    String username = tokenDetails.getClaims().getSubject();
+    String username = tokenDetails.getUsername();
     Collection<? extends GrantedAuthority> authorities = jwtServiceProvider.extractAuthorities(
         tokenDetails.getClaims());
 
     UserDetailsDto userDetails = UserDetailsDto.builder()
-        .username(username).password(tokenDetails.getToken()).authorities(authorities).build(); // user password not needed here
+        .username(username).password(tokenDetails.getId()).authorities(authorities).build(); // user password is not needed here
 
     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
         userDetails, null, userDetails.getAuthorities()); // synced with UsernamePasswordAuthenticationFilter strategy

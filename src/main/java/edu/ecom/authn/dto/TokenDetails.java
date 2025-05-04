@@ -19,14 +19,14 @@ public class TokenDetails {
 
   String id;
 
-  @JsonIgnore
+  @JsonIgnore //Not to cache or directly sent in body to gateway
   String token;
 
   Date issuedAt;
 
   Date expiration;
 
-  @JsonIgnore
+  @JsonIgnore //Not to be sent to gateway directly
   Claims claims;
 
   Map<String, String> clientMetadata;

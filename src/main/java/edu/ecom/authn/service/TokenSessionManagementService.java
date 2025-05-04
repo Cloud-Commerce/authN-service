@@ -19,12 +19,14 @@ public class TokenSessionManagementService {
 
   private final RedisTemplate<String, TokenDetails> redisTemplate;
   private final edu.ecom.authn.service.JwtServiceProvider jwtServiceProvider;
+  private final AuthEventPublisher authEventPublisher;
 
   @Autowired
   public TokenSessionManagementService(RedisTemplate<String, TokenDetails> redisTemplate,
-      JwtServiceProvider jwtServiceProvider) {
+      JwtServiceProvider jwtServiceProvider, AuthEventPublisher authEventPublisher) {
     this.redisTemplate = redisTemplate;
     this.jwtServiceProvider = jwtServiceProvider;
+    this.authEventPublisher = authEventPublisher;
   }
 
   public void addActiveSession(TokenDetails tokenDetails) {
@@ -53,8 +55,12 @@ public class TokenSessionManagementService {
 
   public void invalidateAllTokensForUser(String username) {
     List<String> activeSessionKeysByPrefix = getKeysByPrefix(getActiveSessionKeyForUser(username, ""));
-    activeSessionKeysByPrefix.stream().map(redisTemplate.opsForValue()::getAndDelete)
-        .filter(Objects::nonNull).forEach(tokenDetails -> removeActiveSession(username, tokenDetails.getId()));
+    List<String> jtis = activeSessionKeysByPrefix.stream()
+        .map(redisTemplate.opsForValue()::getAndDelete)
+        .filter(Objects::nonNull).map(TokenDetails::getId)
+        .peek(id -> removeActiveSession(username, id)).toList();
+
+    authEventPublisher.publishPasswordChangeEvent(jtis);
   }
 
   private Map<String, TokenDetails> getKeyValuesByPrefix(String prefix) {
@@ -85,5 +91,10 @@ public class TokenSessionManagementService {
     TokenDetails tokenDetails = jwtServiceProvider.generateToken(authentication);
     addActiveSession(tokenDetails);
     return tokenDetails;
+  }
+
+  public void invalidateSingleToken(String subject, String id) {
+    removeActiveSession(subject, id);
+    authEventPublisher.publishPasswordChangeEvent(List.of(id));
   }
 }

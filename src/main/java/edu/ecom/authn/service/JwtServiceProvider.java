@@ -87,10 +87,6 @@ public class JwtServiceProvider {
         .expiration(claims.getExpiration()).genuine(true).expired(expired);
   }
 
-  public String extractUsername(String token) {
-    return parseToken(token).getUsername();
-  }
-
   public Collection<? extends GrantedAuthority> extractAuthorities(Claims claims) {
     List<LinkedHashMap<String, String>> mapList = claims.get("authorities", List.class);
     return mapList.stream().map(m -> m.get("authority"))

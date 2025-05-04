@@ -39,7 +39,7 @@ public class JwtAuthHelper {
 
     Claims claims = tokenDetails.getClaims();
 
-    if(tokenSessionManagementService.isTokenBlacklisted(claims.getId()))
+    if(!tokenSessionManagementService.isSessionActive(tokenDetails.getUsername(), tokenDetails.getId()))
       throw new SessionAuthenticationException("Expired Session : User Logged out!");
 
     if(tokenDetails.isExpired()) {

@@ -29,33 +29,27 @@ public class TokenSessionManagementService {
   }
 
   public void addActiveSession(TokenDetails tokenDetails) {
-    long ttlInMillis = tokenDetails.getExpiration().getTime() - System.currentTimeMillis();
-    redisTemplate.opsForValue().set(getSessionKeyForUser(tokenDetails.getUsername(), tokenDetails.getId()),
-        tokenDetails, ttlInMillis, TimeUnit.MILLISECONDS);
+    String activeSessionKey = getActiveSessionKeyForUser(tokenDetails.getUsername(), tokenDetails.getId());
+    if(redisTemplate.hasKey(activeSessionKey))
+      redisTemplate.expire(activeSessionKey, 7, TimeUnit.DAYS);
+    else
+      redisTemplate.opsForValue().set(activeSessionKey, tokenDetails, 7, TimeUnit.DAYS);
   }
 
-  private static String getSessionKeyForUser(String username, String jti) {
+  private static String getActiveSessionKeyForUser(String username, String jti) {
     return String.format("user:sessions:%s:%s", username, jti);
   }
 
-  public void markAsBlacklisted(String username, String jti, Date expiration) {
-    String globalBlacklistKey = getGlobalBlacklistKey(jti);
-    TokenDetails value = TokenDetails.builder().build();
-    long ttlInMillis = expiration.getTime() - System.currentTimeMillis() + 100;
-    redisTemplate.opsForValue().set(globalBlacklistKey, value, ttlInMillis, TimeUnit.MILLISECONDS);
-    redisTemplate.delete(getSessionKeyForUser(username, jti));
+  public void removeActiveSession(String username, String jti, Date expiration) {
+    redisTemplate.delete(getActiveSessionKeyForUser(username, jti));
   }
 
-  private static String getGlobalBlacklistKey(String jti) {
-    return "jwt:blacklist:" + jti;
-  }
-
-  public boolean isTokenBlacklisted(String jti) {
-    return redisTemplate.hasKey(getGlobalBlacklistKey(jti));
+  public boolean isSessionActive(String username, String jti) {
+    return redisTemplate.hasKey(getActiveSessionKeyForUser(username, jti));
   }
 
   public int getActiveSessionCountForUser(String username) {
-    return Objects.requireNonNull(getKeysByPrefix(getSessionKeyForUser(username, ""))).size();
+    return Objects.requireNonNull(getKeysByPrefix(getActiveSessionKeyForUser(username, ""))).size();
   }
 
   public void invalidateAllTokensForUser(String username) {
@@ -64,15 +58,15 @@ public class TokenSessionManagementService {
 //      redisTemplate.delete(key);
 //    });
 
-    List<String> activeSessionKeysByPrefix = getKeysByPrefix(getSessionKeyForUser(username, ""));
+    List<String> activeSessionKeysByPrefix = getKeysByPrefix(getActiveSessionKeyForUser(username, ""));
     activeSessionKeysByPrefix.stream().map(redisTemplate.opsForValue()::getAndDelete)
-        .filter(Objects::nonNull).forEach(tokenDetails -> markAsBlacklisted(username, tokenDetails.getId(), tokenDetails.getExpiration()));
+        .filter(Objects::nonNull).forEach(tokenDetails -> removeActiveSession(username, tokenDetails.getId(), tokenDetails.getExpiration()));
   }
 
   private Map<String, TokenDetails> getKeyValuesByPrefix(String prefix) {
     List<String> keys = getKeysByPrefix(prefix);
     return Objects.requireNonNull(redisTemplate.opsForValue().multiGet(keys)).stream()
-        .collect(Collectors.toMap(v -> getSessionKeyForUser(v.getUsername(), v.getId()), tokenDetails -> tokenDetails));
+        .collect(Collectors.toMap(v -> getActiveSessionKeyForUser(v.getUsername(), v.getId()), tokenDetails -> tokenDetails));
   }
 
   private List<String> getKeysByPrefix(String prefix) {
